@@ -6,7 +6,7 @@
 namespace osuCrypto
 {
 
-    void CLP::parse(int argc, char const*const* argv)
+    void CLP::parse(int argc, char const *const *argv)
     {
         if (argc > 0)
         {
@@ -36,7 +36,8 @@ namespace osuCrypto
             ptr = argv[i];
 
             std::pair<std::string, std::list<std::string>> keyValues;
-            keyValues.first = ss.str();;
+            keyValues.first = ss.str();
+            ;
 
             while (i < argc && (ptr[0] != '-' || (ptr[0] == '-' && ptr[1] >= '0' && ptr[1] <= '9')))
             {
@@ -54,7 +55,7 @@ namespace osuCrypto
             mKeyValues.emplace(keyValues);
         }
     }
-    std::vector<std::string> split(const std::string& s, char delim);
+    std::vector<std::string> split(const std::string &s, char delim);
 
     void CLP::setDefault(std::string key, std::string value)
     {
@@ -67,10 +68,9 @@ namespace osuCrypto
             else
             {
                 auto parts = split(value, ' ');
-                mKeyValues.emplace(std::make_pair(key, std::list<std::string>{ parts.begin(), parts.end()}));
+                mKeyValues.emplace(std::make_pair(key, std::list<std::string>{parts.begin(), parts.end()}));
             }
         }
-
     }
     void CLP::setDefault(std::vector<std::string> keys, std::string value)
     {
@@ -82,14 +82,15 @@ namespace osuCrypto
 
     void CLP::set(std::string name)
     {
+        // 获取键为 name 的值。如果该键不存在，它会自动插入一个具有默认值的新条目，并返回该条目的引用。
         mKeyValues[name];
     }
 
-    bool CLP::isSet(std::string name)const
+    bool CLP::isSet(std::string name) const
     {
         return mKeyValues.find(name) != mKeyValues.end();
     }
-    bool CLP::isSet(std::vector<std::string> names)const
+    bool CLP::isSet(std::vector<std::string> names) const
     {
         for (auto name : names)
         {
@@ -101,11 +102,11 @@ namespace osuCrypto
         return false;
     }
 
-    bool CLP::hasValue(std::string name)const
+    bool CLP::hasValue(std::string name) const
     {
         return mKeyValues.find(name) != mKeyValues.end() && mKeyValues.at(name).size();
     }
-    bool CLP::hasValue(std::vector<std::string> names)const
+    bool CLP::hasValue(std::vector<std::string> names) const
     {
         for (auto name : names)
         {
@@ -117,7 +118,7 @@ namespace osuCrypto
         return false;
     }
 
-    const std::list<std::string>& CLP::getList(std::vector<std::string> names) const
+    const std::list<std::string> &CLP::getList(std::vector<std::string> names) const
     {
         for (auto name : names)
         {

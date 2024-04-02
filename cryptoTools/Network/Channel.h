@@ -19,7 +19,8 @@
 
 #include "TLS.h"
 
-namespace osuCrypto {
+namespace osuCrypto
+{
 
     class ChannelBase;
     class Session;
@@ -31,27 +32,23 @@ namespace osuCrypto {
     class Channel
     {
     public:
-
         // The default constructors
         Channel() = default;
-        Channel(const Channel& copy);
-        Channel(Channel&& move) = default;
+        Channel(const Channel &copy);
+        Channel(Channel &&move) = default;
 
         // Special constructor used to construct a Channel from some socket.
         // Note, Channel takes ownership of the socket and will delete it
         // when done.
-        Channel(IOService& ios, SocketInterface* sock);
+        Channel(IOService &ios, SocketInterface *sock);
 
         ~Channel();
 
         // Default assignment
-        Channel& operator=(Channel&& move);
+        Channel &operator=(Channel &&move);
 
         // Default assignment
-        Channel& operator=(const Channel& copy);
-
-
-
+        Channel &operator=(const Channel &copy);
 
         //////////////////////////////////////////////////////////////////////////////
         //						   Sending interface								//
@@ -59,225 +56,254 @@ namespace osuCrypto {
 
         // Sends length number of T pointed to by src over the network. The type T
         // must be POD. Returns once all the data has been sent.
-        template<typename T>
+        // 同步发送，指针与数据量
+        // T 类型必须是 POD（Plain Old Data）类型
+        template <typename T>
         typename std::enable_if<std::is_pod<T>::value, void>::type
-            send(const T* src, u64 length);
+        send(const T *src, u64 length);
 
         // Sends the data in buf over the network. The type Container  must meet the
         // requirements defined in IoBuffer.h. Returns once all the data has been sent.
+        // 同步发送，数据类型的引用
         template <class T>
         typename std::enable_if<std::is_pod<T>::value, void>::type
-            send(const T& buf);
+        send(const T &buf);
 
         // Sends the data in buf over the network. The type Container  must meet the
         // requirements defined in IoBuffer.h. Returns once all the data has been sent.
+        // 同步发送，容器的引用，容器类型 T 必须满足在 IoBuffer.h 中定义的要求
         template <class Container>
         typename std::enable_if<is_container<Container>::value, void>::type
-            send(const Container& buf);
-
+        send(const Container &buf);
 
         // Sends the data in buf over the network. The type T must be POD.
         // Returns before the data has been sent. The life time of the data must be
         // managed externally to ensure it lives longer than the async operations.
-        template<typename T>
+        // 异步发送，指针与数据量
+        template <typename T>
         typename std::enable_if<std::is_pod<T>::value, void>::type
-            asyncSend(const T* data, u64 length);
+        asyncSend(const T *data, u64 length);
+
+        // Sends the data in buf over the network. The type T must be POD.
+        // Returns before the data has been sent. The life time of the data must be
+        // managed externally to ensure it lives longer than the async operations.
+        // 异步发送，类型引用
+        template <typename T>
+        typename std::enable_if<std::is_pod<T>::value, void>::type
+        asyncSend(const T &data);
+
+        // Sends the data in buf over the network. The type T must be POD.
+        // Returns before the data has been sent. The life time of the data must be
+        // managed externally to ensure it lives longer than the async operations.
+        // 异步发送，容器引用
+        template <typename Container>
+        typename std::enable_if<is_container<Container>::value, void>::type
+        asyncSend(const Container &data);
+
+        // Sends the data in buf over the network. The type Container  must meet the
+        // requirements defined in IoBuffer.h. Returns before the data has been sent.
+        // 异步发送，Container && (locator value read value)
+        template <class Container>
+        typename std::enable_if<is_container<Container>::value, void>::type
+        asyncSend(Container &&c);
 
         // Sends the data in buf over the network. The type Container  must meet the
         // requirements defined in IoBuffer.h. Returns before the data has been sent.
         // The life time of the data must be managed externally to ensure it lives
         // longer than the async operations.  callback is a function that is called
         // from another thread once the send operation has succeeded.
-        template<typename Container>
+        // 异步发送，Container && (locator value read value)，有回调函数 std::function<void()>
+        template <typename Container>
         typename std::enable_if<is_container<Container>::value, void>::type
-            asyncSend(Container&& data, std::function<void()> callback);
-
+        asyncSend(Container &&data, std::function<void()> callback);
 
         // Sends the data in buf over the network. The type Container  must meet the
         // requirements defined in IoBuffer.h. Returns before the data has been sent.
         // The life time of the data must be managed externally to ensure it lives
         // longer than the async operations.  callback is a function that is called
         // from another thread once the send operation has completed.
-        template<typename Container>
+        // 异步发送，Container && (locator value read value)，有回调函数 std::function<void(const error_code &)>
+        template <typename Container>
         typename std::enable_if<is_container<Container>::value, void>::type
-            asyncSend(Container&& data, std::function<void(const error_code&)> callback);
+        asyncSend(Container &&data, std::function<void(const error_code &)> callback);
 
+        // Sends the data in buf over the network. The type Container  must meet the
+        // requirements defined in IoBuffer.h. Returns before the data has been sent.
+        // 异步发送，std::unique_ptr<Container>
+        template <class Container>
+        typename std::enable_if<is_container<Container>::value, void>::type
+        asyncSend(std::unique_ptr<Container> buffer);
+
+        // Sends the data in buf over the network. The type Container  must meet the
+        // requirements defined in IoBuffer.h. Returns before the data has been sent.
+        // 异步发送，std::shared_ptr<Container>
+        template <class Container>
+        typename std::enable_if<is_container<Container>::value, void>::type
+        asyncSend(std::shared_ptr<Container> buffer);
 
         // Sends the data in buf over the network. The type T must be POD.
         // Returns before the data has been sent. The life time of the data must be
         // managed externally to ensure it lives longer than the async operations.
-        template<typename T>
-        typename std::enable_if<std::is_pod<T>::value, void>::type
-            asyncSend(const T& data);
-
-        // Sends the data in buf over the network. The type T must be POD.
-        // Returns before the data has been sent. The life time of the data must be
-        // managed externally to ensure it lives longer than the async operations.
-        template<typename Container>
-        typename std::enable_if<is_container<Container>::value, void>::type
-            asyncSend(const Container& data);
-
-        // Sends the data in buf over the network. The type Container  must meet the
-        // requirements defined in IoBuffer.h. Returns before the data has been sent.
-        template <class Container>
-        typename std::enable_if<is_container<Container>::value, void>::type
-            asyncSend(Container&& c);
-
-        // Sends the data in buf over the network. The type Container  must meet the
-        // requirements defined in IoBuffer.h. Returns before the data has been sent.
-        template <class Container>
-        typename std::enable_if<is_container<Container>::value, void>::type
-            asyncSend(std::unique_ptr<Container> buffer);
-
-        // Sends the data in buf over the network. The type Container  must meet the
-        // requirements defined in IoBuffer.h. Returns before the data has been sent.
-        template <class Container>
-        typename std::enable_if<is_container<Container>::value, void>::type
-            asyncSend(std::shared_ptr<Container> buffer);
-
-
-        // Sends the data in buf over the network. The type T must be POD.
-        // Returns before the data has been sent. The life time of the data must be
-        // managed externally to ensure it lives longer than the async operations.
-        template<typename T>
+        // 异步发送，数据指针+数据量，不同的是，返回值为 std::future<void>
+        template <typename T>
         typename std::enable_if<std::is_pod<T>::value, std::future<void>>::type
-            asyncSendFuture(const T* data, u64 length);
-
-
-        // Performs a data copy and then sends the data in buf over the network.
-        //  The type T must be POD. Returns before the data has been sent.
-        template<typename T>
-        typename std::enable_if<std::is_pod<T>::value, void>::type
-            asyncSendCopy(const T& buff);
+        asyncSendFuture(const T *data, u64 length);
 
         // Performs a data copy and then sends the data in buf over the network.
         //  The type T must be POD. Returns before the data has been sent.
-        template<typename T>
+        // 异步发送，拷贝，指针+数据量
+        template <typename T>
         typename std::enable_if<std::is_pod<T>::value, void>::type
-            asyncSendCopy(const T* bufferPtr, u64 length);
+        asyncSendCopy(const T *bufferPtr, u64 length);
+
+        // Performs a data copy and then sends the data in buf over the network.
+        //  The type T must be POD. Returns before the data has been sent.
+        // 异步发送，拷贝，数据引用
+        template <typename T>
+        typename std::enable_if<std::is_pod<T>::value, void>::type
+        asyncSendCopy(const T &buff);
 
         // Performs a data copy and then sends the data in buf over the network.
         // The type Container must meet the requirements defined in IoBuffer.h.
         // Returns before the data has been sent.
-        template <typename  Container>
+        // 异步发送，拷贝，容器引用
+        template <typename Container>
         typename std::enable_if<is_container<Container>::value, void>::type
-            asyncSendCopy(const Container& buf);
-
+        asyncSendCopy(const Container &buf);
 
         //////////////////////////////////////////////////////////////////////////////
         //						   Receiving interface								//
         //////////////////////////////////////////////////////////////////////////////
 
+        // Receive data over the network. The function returns once all the data
+        // has been received.
+        // 同步接收数据，指针+数据量
+        template <typename T>
+        typename std::enable_if<std::is_pod<T>::value, void>::type
+        recv(T *dest, u64 length);
+
+        // Receive data over the network. The function returns once all the data
+        // has been received.
+        // 同步接收数据，引用
+        template <typename T>
+        typename std::enable_if<std::is_pod<T>::value, void>::type
+        recv(T &dest) { recv(&dest, 1); }
+
         // Receive data over the network. If possible, the container c will be resized
         // to fit the data. The function returns once all the data has been received.
+        // 同步接收数据，容器引用，容器 c 将会resize，以适应接收到的数据
         template <class Container>
         typename std::enable_if<
-            is_container<Container>::value&&
-            has_resize<Container, void(typename Container::size_type)>::value, void>::type
-            recv(Container& c)
+            is_container<Container>::value &&
+                has_resize<Container, void(typename Container::size_type)>::value,
+            void>::type
+        recv(Container &c)
         {
             asyncRecv(c).get();
         }
 
         // Receive data over the network. The container c must be the correct size to
         // fit the data. The function returns once all the data has been received.
+        // 同步接收数据，容器引用，容器 c 没有resize方法，必须指定正确的size
         template <class Container>
         typename std::enable_if<
             is_container<Container>::value &&
-            !has_resize<Container, void(typename Container::size_type)>::value, void>::type
-            recv(Container& c)
+                !has_resize<Container, void(typename Container::size_type)>::value,
+            void>::type
+        recv(Container &c)
         {
             asyncRecv(c).get();
         }
 
-        // Receive data over the network. The function returns once all the data
-        // has been received.
-        template<typename T>
-        typename std::enable_if<std::is_pod<T>::value, void>::type
-            recv(T* dest, u64 length);
-
-        // Receive data over the network. The function returns once all the data
-        // has been received.
-        template<typename T>
-        typename std::enable_if<std::is_pod<T>::value, void>::type
-            recv(T& dest) { recv(&dest, 1); }
-
         // Receive data over the network asynchronously. The function returns right away,
         // before the data has been received. When all the data has benn received the
         // future is set.
-        template<typename T>
+        // 异步接收数据，指针+数据量
+        template <typename T>
         typename std::enable_if<std::is_pod<T>::value, std::future<void>>::type
-            asyncRecv(T* dest, u64 length);
+        asyncRecv(T *dest, u64 length);
 
         // Receive data over the network asynchronously. The function returns right away,
         // before the data has been received. When all the data has benn received the
         // future is set and the callback fn is called.
-        template<typename T>
+        // 异步接收数据，指针+数据量，有回调函数
+        // std::function<void()>表示一个没有参数并且不返回任何值的函数
+        template <typename T>
         typename std::enable_if<std::is_pod<T>::value, std::future<void>>::type
-            asyncRecv(T* dest, u64 length, std::function<void()> fn);
+        asyncRecv(T *dest, u64 length, std::function<void()> fn);
 
         // Receive data over the network asynchronously. The function returns right away,
         // before the data has been received. When all the data has benn received the
         // future is set.
-        template<typename T>
+        // 异步接收数据，引用+数据量1
+        template <typename T>
         typename std::enable_if<std::is_pod<T>::value, std::future<void>>::type
-            asyncRecv(T& dest) { return asyncRecv(&dest, 1); }
+        asyncRecv(T &dest) { return asyncRecv(&dest, 1); }
 
         // Receive data over the network asynchronously. The function returns right away,
         // before the data has been received. When all the data has benn received the
         // future is set. The container must be the correct size to fit the data received.
+        // 异步接收，容器 c 没有resize方法，必须指定正确的size
         template <class Container>
         typename std::enable_if<
             is_container<Container>::value &&
-            !has_resize<Container, void(typename Container::size_type)>::value, std::future<void>>::type
-            asyncRecv(Container & c);
+                !has_resize<Container, void(typename Container::size_type)>::value,
+            std::future<void>>::type
+        asyncRecv(Container &c);
 
         // Receive data over the network asynchronously. The function returns right away,
         // before the data has been received. When all the data has benn received the
         // future is set. The container is resized to fit the data.
+        // 异步接收，容器 c 有resize方法
         template <class Container>
         typename std::enable_if<
-            is_container<Container>::value&&
-            has_resize<Container, void(typename Container::size_type)>::value, std::future<void>>::type
-            asyncRecv(Container & c);
+            is_container<Container>::value &&
+                has_resize<Container, void(typename Container::size_type)>::value,
+            std::future<void>>::type
+        asyncRecv(Container &c);
 
         // Receive data over the network asynchronously. The function returns right away,
         // before the data has been received. When all the data has benn received the
         // future is set and the callback fn is called. The container must be the correct
         // size to fit the data received.
+        // 异步接收，容器c有 resize 方法，有回调函数 std::function<void()>
         template <class Container>
         typename std::enable_if<
-            is_container<Container>::value&&
-            has_resize<Container, void(typename Container::size_type)>::value, std::future<void>>::type
-            asyncRecv(Container & c, std::function<void()> fn);
+            is_container<Container>::value &&
+                has_resize<Container, void(typename Container::size_type)>::value,
+            std::future<void>>::type
+        asyncRecv(Container &c, std::function<void()> fn);
 
         // Receive data over the network asynchronously. The function returns right away,
         // before the data has been received. When all the data has benn received the
         // future is set and the callback fn is called. The container must be the correct
         // size to fit the data received.
+        // 异步接收，容器c没有 resize 方法，有回调函数 std::function<void(const error_code &)>
         template <class Container>
         typename std::enable_if<
-            is_container<Container>::value&&
-            !has_resize<Container, void(typename Container::size_type)>::value, std::future<void>>::type
-            asyncRecv(Container & c, std::function<void(const error_code&)> fn);
+            is_container<Container>::value &&
+                !has_resize<Container, void(typename Container::size_type)>::value,
+            std::future<void>>::type
+        asyncRecv(Container &c, std::function<void(const error_code &)> fn);
 
         // Receive data over the network asynchronously. The function returns right away,
-        // before the data has been received. When all the data has benn received the 
-        // future is set and the callback fn is called. The container must be the correct 
+        // before the data has been received. When all the data has benn received the
+        // future is set and the callback fn is called. The container must be the correct
         // size to fit the data received.
+        // 异步接收，容器c有 resize 方法，有回调函数 std::function<void(const error_code &)>
         template <class Container>
         typename std::enable_if<
-            is_container<Container>::value&&
-            has_resize<Container, void(typename Container::size_type)>::value, std::future<void>>::type
-            asyncRecv(Container & c, std::function<void(const error_code&)> fn);
-
+            is_container<Container>::value &&
+                has_resize<Container, void(typename Container::size_type)>::value,
+            std::future<void>>::type
+        asyncRecv(Container &c, std::function<void(const error_code &)> fn);
 
         //////////////////////////////////////////////////////////////////////////////
         //						   Utility functions								//
         //////////////////////////////////////////////////////////////////////////////
 
         // Get the local endpoint for this channel.
-        //Session& getSession();
+        // Session& getSession();
 
         // The handle for this channel. Both ends will always have the same name.
         std::string getName() const;
@@ -298,19 +324,24 @@ namespace osuCrypto {
         u64 getTotalDataRecv() const;
 
         // Returns the maximum amount of data that this channel has queued up to send since it was created or when resetStats() was last called.
-        //u64 getMaxOutstandingSendData() const;
+        // u64 getMaxOutstandingSendData() const;
 
         // Returns whether this channel is open in that it can send/receive data
         bool isConnected();
 
         // A blocking call that waits until the channel is open in that it can send/receive data
         // Returns if the connection has been made. Always true if no timeout is provided.
+        // 阻塞调用，会等待直到通道建立连接或者超时
+        // 如果在指定的超时时间内建立了连接，则返回 true，否则返回 false。
+        // 如果不提供超时时间，则一直等待直到连接建立。
         bool waitForConnection(std::chrono::milliseconds timeout);
 
         // A blocking call that waits until the channel is open in that it can send/receive data
         // Returns if the connection has been made.
+        // 阻塞调用，等待通道建立连接, 一直等待
         void waitForConnection();
 
+        // 连接完成后调用回调函数 std::function<void(const error_code&)>
         void onConnect(completion_handle handle);
 
         // Close this channel to denote that no more data will be sent or received.
@@ -324,8 +355,13 @@ namespace osuCrypto {
 
         void asyncCancel(std::function<void()> completionHandle, bool close = true);
 
-
-        enum class Status { Normal, Closing, Closed, Canceling};
+        enum class Status
+        {
+            Normal,
+            Closing,
+            Closed,
+            Canceling
+        };
 
         std::string commonName();
 
@@ -337,14 +373,12 @@ namespace osuCrypto {
         }
 
     private:
-
         friend class IOService;
         friend class Session;
-        Channel(Session& endpoint, std::string localName, std::string remoteName);
+        Channel(Session &endpoint, std::string localName, std::string remoteName);
     };
 
-
-    inline std::ostream& operator<< (std::ostream& o, const Channel::Status& s)
+    inline std::ostream &operator<<(std::ostream &o, const Channel::Status &s)
     {
         switch (s)
         {
@@ -367,65 +401,65 @@ namespace osuCrypto {
         return o;
     }
 
-
-
     class SocketConnectError : public std::runtime_error
     {
     public:
-        SocketConnectError(const std::string& reason)
-            :std::runtime_error(reason)
-        {}
+        SocketConnectError(const std::string &reason)
+            : std::runtime_error(reason)
+        {
+        }
     };
 
     struct SessionBase;
-
-
 
     struct StartSocketOp
     {
 
         StartSocketOp(std::shared_ptr<ChannelBase> chl);
 
-        void setHandle(io_completion_handle&& completionHandle, bool sendOp);
+        void setHandle(io_completion_handle &&completionHandle, bool sendOp);
         void cancelPending(bool sendOp);
-        void connectCallback(const error_code& ec);
+        void connectCallback(const error_code &ec);
         bool canceled() const;
         void asyncConnectToServer();
         void recvServerMessage();
         void sendConnectionString();
-        void retryConnect(const error_code& ec);
+        void retryConnect(const error_code &ec);
 
         char mRecvChar;
-        void setSocket(std::unique_ptr<BoostSocketInterface> socket, const error_code& ec);
+        void setSocket(std::unique_ptr<BoostSocketInterface> socket, const error_code &ec);
 
         void finalize(std::unique_ptr<SocketInterface> sock, error_code ec);
 
-        void addComHandle(completion_handle&& comHandle)
+        void addComHandle(completion_handle &&comHandle)
         {
-            boost::asio::dispatch(mStrand, [this, ch = std::forward<completion_handle>(comHandle)]() mutable {
+            boost::asio::dispatch(mStrand, [this, ch = std::forward<completion_handle>(comHandle)]() mutable
+                                  {
                 if (mFinalized)
                 {
                     ch(mEC);
                 }
                 else
-                    mComHandles.emplace_back(std::forward<completion_handle>(ch));
-            }
-            );
+                    mComHandles.emplace_back(std::forward<completion_handle>(ch)); });
         }
-
 
         boost::asio::deadline_timer mTimer;
 
-        enum class ComHandleStatus { Uninit, Init, Eval };
+        enum class ComHandleStatus
+        {
+            Uninit,
+            Init,
+            Eval
+        };
         ComHandleStatus mSendStatus = ComHandleStatus::Uninit;
         ComHandleStatus mRecvStatus = ComHandleStatus::Uninit;
 
-        boost::asio::strand<boost::asio::io_context::executor_type>& mStrand;
+        boost::asio::strand<boost::asio::io_context::executor_type> &mStrand;
         std::vector<u8> mSendBuffer;
         std::unique_ptr<BoostSocketInterface> mSock;
 
 #ifdef ENABLE_WOLFSSL
-        void validateTLS(const error_code& ec);
+        void validateTLS(const error_code &ec);
         std::unique_ptr<TLSSocket> mTLSSock;
         block mTLSSessionIDBuf;
 #endif
@@ -433,37 +467,38 @@ namespace osuCrypto {
         double mBackoff = 1;
         bool mFinalized = false, mCanceled = false, mIsFirst;
         error_code mEC, mConnectEC;
-        ChannelBase* mChl;
+        ChannelBase *mChl;
         io_completion_handle mSendComHandle, mRecvComHandle;
         std::list<completion_handle> mComHandles;
-
     };
-
 
     struct StartSocketSendOp : public details::SendOperation
     {
-        StartSocketOp* mBase;
+        StartSocketOp *mBase;
 
-        StartSocketSendOp(StartSocketOp* base)
+        StartSocketSendOp(StartSocketOp *base)
             : mBase(base) {}
 
-        void asyncPerform(ChannelBase*, io_completion_handle&& completionHandle) override {
+        void asyncPerform(ChannelBase *, io_completion_handle &&completionHandle) override
+        {
             mBase->setHandle(std::forward<io_completion_handle>(completionHandle), true);
         }
-        void asyncCancelPending(ChannelBase* base, const error_code& ec) override {
+        void asyncCancelPending(ChannelBase *base, const error_code &ec) override
+        {
             mBase->cancelPending(true);
         }
 
-        void asyncCancel(ChannelBase* base, const error_code& ec, io_completion_handle&& completionHandle) override
+        void asyncCancel(ChannelBase *base, const error_code &ec, io_completion_handle &&completionHandle) override
         {
             mBase->setHandle(std::forward<io_completion_handle>(completionHandle), true);
             mBase->cancelPending(true);
         }
 
-        std::string toString() const override {
+        std::string toString() const override
+        {
             return std::string("StartSocketSendOp # ")
 #ifdef ENABLE_NET_LOG
-                + std::to_string(mIdx)
+                   + std::to_string(mIdx)
 #endif
                 ;
         }
@@ -471,46 +506,46 @@ namespace osuCrypto {
 
     struct StartSocketRecvOp : public details::RecvOperation
     {
-        StartSocketOp* mBase;
-        StartSocketRecvOp(StartSocketOp* base)
+        StartSocketOp *mBase;
+        StartSocketRecvOp(StartSocketOp *base)
             : mBase(base) {}
 
-        void asyncPerform(ChannelBase* base, io_completion_handle&& completionHandle) override {
+        void asyncPerform(ChannelBase *base, io_completion_handle &&completionHandle) override
+        {
             mBase->setHandle(std::forward<io_completion_handle>(completionHandle), false);
         }
-        void asyncCancelPending(ChannelBase* base, const error_code& ec) override { mBase->cancelPending(false); }
+        void asyncCancelPending(ChannelBase *base, const error_code &ec) override { mBase->cancelPending(false); }
 
-        void asyncCancel(ChannelBase* base, const error_code& ec, io_completion_handle&& completionHandle) override
+        void asyncCancel(ChannelBase *base, const error_code &ec, io_completion_handle &&completionHandle) override
         {
             mBase->setHandle(std::forward<io_completion_handle>(completionHandle), false);
             mBase->cancelPending(false);
         }
 
-        std::string toString() const override {
+        std::string toString() const override
+        {
             return std::string("StartSocketRecvOp # ")
 #ifdef ENABLE_NET_LOG
-                + std::to_string(mIdx)
+                   + std::to_string(mIdx)
 #endif
                 ;
         }
     };
 
-
     // The Channel base class the actually holds a socket.
     class ChannelBase : public std::enable_shared_from_this<ChannelBase>
     {
     public:
-        ChannelBase(Session& endpoint, std::string localName, std::string remoteName);
-        ChannelBase(IOService& ios, SocketInterface* sock);
+        ChannelBase(Session &endpoint, std::string localName, std::string remoteName);
+        ChannelBase(IOService &ios, SocketInterface *sock);
         ~ChannelBase();
 
-        IOService& mIos;
+        IOService &mIos;
         Work mWork;
         std::unique_ptr<StartSocketOp> mStartOp;
 
         std::shared_ptr<SessionBase> mSession;
         std::string mRemoteName, mLocalName;
-
 
         Channel::Status mStatus = Channel::Status::Normal;
 
@@ -518,8 +553,8 @@ namespace osuCrypto {
 
         std::shared_ptr<ChannelBase> mRecvLoopLifetime, mSendLoopLifetime;
 
-        bool recvSocketAvailable() const { return !mRecvLoopLifetime;}
-        bool sendSocketAvailable() const { return !mSendLoopLifetime;}
+        bool recvSocketAvailable() const { return !mRecvLoopLifetime; }
+        bool sendSocketAvailable() const { return !mSendLoopLifetime; }
 
         bool mRecvCancelNew = false;
         bool mSendCancelNew = false;
@@ -531,33 +566,30 @@ namespace osuCrypto {
         u64 mTotalSentData = 0;
         u64 mTotalRecvData = 0;
 
-        void cancelRecvQueue(const error_code& ec);
-        void cancelSendQueue(const error_code& ec);
+        void cancelRecvQueue(const error_code &ec);
+        void cancelSendQueue(const error_code &ec);
 
         void close();
         void cancel(bool close);
         void asyncClose(std::function<void()> completionHandle);
         void asyncCancel(std::function<void()> completionHandle, bool close);
 
-        IOService& getIOService() { return mIos; }
+        IOService &getIOService() { return mIos; }
 
         bool stopped() { return mStatus == Channel::Status::Closed; }
 
-        //bool mActiveRecvSizeError = false;
-        //bool activeRecvSizeError() const { return mActiveRecvSizeError; }
-
+        // bool mActiveRecvSizeError = false;
+        // bool activeRecvSizeError() const { return mActiveRecvSizeError; }
 
         SpscQueue<SBO_ptr<details::SendOperation>> mSendQueue;
         SpscQueue<SBO_ptr<details::RecvOperation>> mRecvQueue;
-        void recvEnque(SBO_ptr<details::RecvOperation>&& op);
-        void sendEnque(SBO_ptr<details::SendOperation>&& op);
-
+        void recvEnque(SBO_ptr<details::RecvOperation> &&op);
+        void sendEnque(SBO_ptr<details::SendOperation> &&op);
 
         void asyncPerformRecv();
         void asyncPerformSend();
 
         std::string commonName();
-
 
         std::array<boost::asio::mutable_buffer, 2> mSendBuffers;
         boost::asio::mutable_buffer mRecvBuffer;
@@ -568,56 +600,52 @@ namespace osuCrypto {
         u32 mRecvIdx = 0, mSendIdx = 0;
         Log mLog;
 #endif
-
     };
 
-
-
-    template<class Container>
+    template <class Container>
     typename std::enable_if<is_container<Container>::value, void>::type Channel::asyncSend(std::unique_ptr<Container> c)
     {
         // less that 32 bit max
         assert(channelBuffSize(*c) < u32(-1));
 
-        if (channelBuffSize(*c) == 0) return;
+        if (channelBuffSize(*c) == 0)
+            return;
 
         auto op = make_SBO_ptr<
             details::SendOperation,
             details::MoveSendBuff<
-                std::unique_ptr<Container>
-            >>(std::move(c));
+                std::unique_ptr<Container>>>(std::move(c));
 
         mBase->sendEnque(std::move(op));
     }
 
-    template<class Container>
+    template <class Container>
     typename std::enable_if<is_container<Container>::value, void>::type Channel::asyncSend(std::shared_ptr<Container> c)
     {
         // less that 32 bit max
         assert(channelBuffSize(*c) < u32(-1));
 
-        if (channelBuffSize(*c) == 0) return;
-
+        if (channelBuffSize(*c) == 0)
+            return;
 
         auto op = make_SBO_ptr<
             details::SendOperation,
             details::MoveSendBuff<
-                std::shared_ptr<Container>
-            >>(std::move(c));
+                std::shared_ptr<Container>>>(std::move(c));
 
         mBase->sendEnque(std::move(op));
     }
 
-
-    template<class Container>
-    typename std::enable_if<is_container<Container>::value, void>::type Channel::asyncSend(const Container& c)
+    template <class Container>
+    typename std::enable_if<is_container<Container>::value, void>::type Channel::asyncSend(const Container &c)
     {
         // less that 32 bit max
         assert(channelBuffSize(c) < u32(-1));
 
-        if (channelBuffSize(c) == 0) return;
+        if (channelBuffSize(c) == 0)
+            return;
 
-        auto* buff = (u8*)c.data();
+        auto *buff = (u8 *)c.data();
         auto size = c.size() * sizeof(typename Container::value_type);
 
         auto op = make_SBO_ptr<
@@ -627,18 +655,18 @@ namespace osuCrypto {
         mBase->sendEnque(std::move(op));
     }
 
-    template<class Container>
-    typename std::enable_if<is_container<Container>::value, void>::type Channel::asyncSend(Container&& c)
+    template <class Container>
+    typename std::enable_if<is_container<Container>::value, void>::type Channel::asyncSend(Container &&c)
     {
         // less that 32 bit max
         assert(channelBuffSize(c) < u32(-1));
 
-        if (channelBuffSize(c) == 0) return;
+        if (channelBuffSize(c) == 0)
+            return;
 
         auto op = make_SBO_ptr<
             details::SendOperation,
-            details::MoveSendBuff<Container>>
-            (std::move(c));
+            details::MoveSendBuff<Container>>(std::move(c));
 
         mBase->sendEnque(std::move(op));
     }
@@ -646,8 +674,9 @@ namespace osuCrypto {
     template <class Container>
     typename std::enable_if<
         is_container<Container>::value &&
-        !has_resize<Container, void(typename Container::size_type)>::value, std::future<void>>::type
-        Channel::asyncRecv(Container & c)
+            !has_resize<Container, void(typename Container::size_type)>::value,
+        std::future<void>>::type
+    Channel::asyncRecv(Container &c)
     {
         // less that 32 bit max
         assert(channelBuffSize(c) < u32(-1));
@@ -662,8 +691,7 @@ namespace osuCrypto {
         std::future<void> future;
         auto op = make_SBO_ptr<
             details::RecvOperation,
-            details::RefRecvBuff<Container>>
-            (c, future);
+            details::RefRecvBuff<Container>>(c, future);
 
         mBase->recvEnque(std::move(op));
 
@@ -672,105 +700,98 @@ namespace osuCrypto {
 
     template <class Container>
     typename std::enable_if<
-        is_container<Container>::value&&
-        has_resize<Container, void(typename Container::size_type)>::value, std::future<void>>::type
-        Channel::asyncRecv(Container & c)
+        is_container<Container>::value &&
+            has_resize<Container, void(typename Container::size_type)>::value,
+        std::future<void>>::type
+    Channel::asyncRecv(Container &c)
     {
         std::future<void> future;
         auto op = make_SBO_ptr<
             details::RecvOperation,
-            details::ResizableRefRecvBuff<Container>>
-            (c, future);
+            details::ResizableRefRecvBuff<Container>>(c, future);
 
         mBase->recvEnque(std::move(op));
         return future;
     }
 
-
     template <class Container>
     typename std::enable_if<
-        is_container<Container>::value&&
-        has_resize<Container, void(typename Container::size_type)>::value, std::future<void>>::type
-        Channel::asyncRecv(Container & c, std::function<void()> fn)
-    {
-        std::future<void> future;
-        auto op = make_SBO_ptr<
-            details::RecvOperation,
-            details::WithCallback<
-                details::ResizableRefRecvBuff<Container>
-            >>
-            (std::move(fn), c, future);
-
-        mBase->recvEnque(std::move(op));
-
-        return future;
-    }
-
-
-    template <class Container>
-    typename std::enable_if<
-        is_container<Container>::value&&
-        !has_resize<Container, void(typename Container::size_type)>::value, std::future<void>>::type
-        Channel::asyncRecv(Container & c, std::function<void(const error_code&)> fn)
+        is_container<Container>::value &&
+            has_resize<Container, void(typename Container::size_type)>::value,
+        std::future<void>>::type
+    Channel::asyncRecv(Container &c, std::function<void()> fn)
     {
         std::future<void> future;
         auto op = make_SBO_ptr<
             details::RecvOperation,
             details::WithCallback<
-                details::RefRecvBuff<Container>
-            >>(std::move(fn), c, future);
+                details::ResizableRefRecvBuff<Container>>>(std::move(fn), c, future);
 
         mBase->recvEnque(std::move(op));
 
         return future;
     }
 
-
-
     template <class Container>
     typename std::enable_if<
-        is_container<Container>::value&&
-        has_resize<Container, void(typename Container::size_type)>::value, std::future<void>>::type
-        Channel::asyncRecv(Container & c, std::function<void(const error_code&)> fn)
+        is_container<Container>::value &&
+            !has_resize<Container, void(typename Container::size_type)>::value,
+        std::future<void>>::type
+    Channel::asyncRecv(Container &c, std::function<void(const error_code &)> fn)
     {
         std::future<void> future;
         auto op = make_SBO_ptr<
             details::RecvOperation,
             details::WithCallback<
-                details::ResizableRefRecvBuff<Container>
-            >>(std::move(fn), c, future);
+                details::RefRecvBuff<Container>>>(std::move(fn), c, future);
 
         mBase->recvEnque(std::move(op));
 
         return future;
     }
 
-    template<class Container>
-    typename std::enable_if<is_container<Container>::value, void>::type Channel::send(const Container& buf)
+    template <class Container>
+    typename std::enable_if<
+        is_container<Container>::value &&
+            has_resize<Container, void(typename Container::size_type)>::value,
+        std::future<void>>::type
+    Channel::asyncRecv(Container &c, std::function<void(const error_code &)> fn)
+    {
+        std::future<void> future;
+        auto op = make_SBO_ptr<
+            details::RecvOperation,
+            details::WithCallback<
+                details::ResizableRefRecvBuff<Container>>>(std::move(fn), c, future);
+
+        mBase->recvEnque(std::move(op));
+
+        return future;
+    }
+
+    template <class Container>
+    typename std::enable_if<is_container<Container>::value, void>::type Channel::send(const Container &buf)
     {
         send(channelBuffData(buf), channelBuffSize(buf));
     }
 
-    template<typename Container>
-    typename std::enable_if<is_container<Container>::value, void>::type Channel::asyncSendCopy(const Container& buf)
+    template <typename Container>
+    typename std::enable_if<is_container<Container>::value, void>::type Channel::asyncSendCopy(const Container &buf)
     {
         asyncSend(std::move(Container(buf)));
     }
 
-
-    template<typename T>
+    template <typename T>
     typename std::enable_if<std::is_pod<T>::value, void>::type
-        Channel::send(const T* buffT, u64 sizeT)
+    Channel::send(const T *buffT, u64 sizeT)
     {
         asyncSendFuture(buffT, sizeT).get();
     }
 
-
-    template<typename T>
+    template <typename T>
     typename std::enable_if<std::is_pod<T>::value, std::future<void>>::type
-        Channel::asyncSendFuture(const T* buffT, u64 sizeT)
+    Channel::asyncSendFuture(const T *buffT, u64 sizeT)
     {
-        u8* buff = (u8*)buffT;
+        u8 *buff = (u8 *)buffT;
         auto size = sizeT * sizeof(T);
 
         // less that 32 bit max
@@ -786,27 +807,25 @@ namespace osuCrypto {
         std::future<void> future;
         auto op = make_SBO_ptr<
             details::SendOperation,
-            details::WithPromise<details::FixedSendBuff>>
-            (future, buff, size);
+            details::WithPromise<details::FixedSendBuff>>(future, buff, size);
 
         mBase->sendEnque(std::move(op));
 
         return future;
     }
 
-
-    template<typename T>
+    template <typename T>
     typename std::enable_if<std::is_pod<T>::value, void>::type
-        Channel::send(const T& buffT)
+    Channel::send(const T &buffT)
     {
         send(&buffT, 1);
     }
 
-    template<typename T>
+    template <typename T>
     typename std::enable_if<std::is_pod<T>::value, std::future<void>>::type
-        Channel::asyncRecv(T* buffT, u64 sizeT)
+    Channel::asyncRecv(T *buffT, u64 sizeT)
     {
-        u8* buff = (u8*)buffT;
+        u8 *buff = (u8 *)buffT;
         auto size = sizeT * sizeof(T);
 
         // less that 32 bit max
@@ -822,18 +841,17 @@ namespace osuCrypto {
         std::future<void> future;
         auto op = make_SBO_ptr<
             details::RecvOperation,
-            details::FixedRecvBuff>
-            (buff, size, future);
+            details::FixedRecvBuff>(buff, size, future);
 
         mBase->recvEnque(std::move(op));
         return future;
     }
 
-    template<typename T>
+    template <typename T>
     typename std::enable_if<std::is_pod<T>::value, std::future<void>>::type
-        Channel::asyncRecv(T* buffT, u64 sizeT, std::function<void()> fn)
+    Channel::asyncRecv(T *buffT, u64 sizeT, std::function<void()> fn)
     {
-        u8* buff = (u8*)buffT;
+        u8 *buff = (u8 *)buffT;
         auto size = sizeT * sizeof(T);
 
         // less that 32 bit max
@@ -849,48 +867,43 @@ namespace osuCrypto {
         std::future<void> future;
         auto op = make_SBO_ptr<
             details::RecvOperation,
-            details::WithCallback<details::FixedRecvBuff>>
-            (std::move(fn), buff, size, future);
+            details::WithCallback<details::FixedRecvBuff>>(std::move(fn), buff, size, future);
 
         mBase->recvEnque(std::move(op));
 
         return future;
     }
 
-    template<typename T>
+    template <typename T>
     typename std::enable_if<std::is_pod<T>::value, void>::type
-        Channel::asyncSend(const T* buffT, u64 sizeT)
+    Channel::asyncSend(const T *buffT, u64 sizeT)
     {
-        u8* buff = (u8*)buffT;
+        u8 *buff = (u8 *)buffT;
         auto size = sizeT * sizeof(T);
 
         // less that 32 bit max
         assert(size < u32(-1));
 
-        if (size == 0) return;
+        if (size == 0)
+            return;
 
         auto op = make_SBO_ptr<
             details::SendOperation,
-            details::FixedSendBuff>
-            (buff, size);
+            details::FixedSendBuff>(buff, size);
 
         mBase->sendEnque(std::move(op));
     }
 
-
-
-    template<typename T>
+    template <typename T>
     typename std::enable_if<std::is_pod<T>::value, void>::type
-        Channel::asyncSend(const T& v)
+    Channel::asyncSend(const T &v)
     {
         asyncSend(&v, 1);
     }
 
-
-
-    template<class Container>
+    template <class Container>
     typename std::enable_if<is_container<Container>::value, void>::type
-        Channel::asyncSend(Container&& c, std::function<void()> callback)
+    Channel::asyncSend(Container &&c, std::function<void()> callback)
     {
         // less that 32 bit max
         assert(channelBuffSize(c) < u32(-1));
@@ -904,17 +917,16 @@ namespace osuCrypto {
         auto op = make_SBO_ptr<
             details::SendOperation,
             details::WithCallback<
-                details::MoveSendBuff<Container>
-            >>(
-                std::move(callback),
-                std::forward<Container>(c));
+                details::MoveSendBuff<Container>>>(
+            std::move(callback),
+            std::forward<Container>(c));
 
         mBase->sendEnque(std::move(op));
     }
 
-    template<class Container>
+    template <class Container>
     typename std::enable_if<is_container<Container>::value, void>::type
-        Channel::asyncSend(Container&& c, std::function<void(const error_code&)> callback)
+    Channel::asyncSend(Container &&c, std::function<void(const error_code &)> callback)
     {
         // less that 32 bit max
         assert(channelBuffSize(c) < u32(-1));
@@ -928,34 +940,31 @@ namespace osuCrypto {
         auto op = make_SBO_ptr<
             details::SendOperation,
             details::WithCallback<
-                details::MoveSendBuff<Container>
-            >>(
-                std::move(callback),
-                std::forward<Container>(c));
+                details::MoveSendBuff<Container>>>(
+            std::move(callback),
+            std::forward<Container>(c));
 
         mBase->sendEnque(std::move(op));
     }
 
-
-    template<typename T>
+    template <typename T>
     typename std::enable_if<std::is_pod<T>::value, void>::type
-        Channel::recv(T* buff, u64 size)
+    Channel::recv(T *buff, u64 size)
     {
         asyncRecv(buff, size).get();
     }
 
-    template<typename T>
+    template <typename T>
     typename std::enable_if<std::is_pod<T>::value, void>::type
-        Channel::asyncSendCopy(const T* bufferPtr, u64 length)
+    Channel::asyncSendCopy(const T *bufferPtr, u64 length)
     {
-        std::vector<u8> bs((u8*)bufferPtr, (u8*)bufferPtr + length * sizeof(T));
+        std::vector<u8> bs((u8 *)bufferPtr, (u8 *)bufferPtr + length * sizeof(T));
         asyncSend(std::move(bs));
     }
 
-
-    template<typename T>
+    template <typename T>
     typename std::enable_if<std::is_pod<T>::value, void>::type
-        Channel::asyncSendCopy(const T& buf)
+    Channel::asyncSendCopy(const T &buf)
     {
         asyncSendCopy(&buf, 1);
     }
