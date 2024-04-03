@@ -3,7 +3,8 @@
 
 #ifdef ENABLE_RELIC
 
-extern "C" {
+extern "C"
+{
 #include "relic/relic_core.h"
 #include "relic/relic_fp.h"
 #include "relic/relic_util.h"
@@ -27,14 +28,10 @@ extern "C" {
 static_assert(0, "Relic must be built with -DMULTI=PTHREAD or -DMULTI=OPENMP");
 #endif
 
-
 namespace osuCrypto
 {
 
-
-
-
-    REccNumber::REccNumber(const REccNumber& num)
+    REccNumber::REccNumber(const REccNumber &num)
     {
         init();
         *this = num;
@@ -45,39 +42,36 @@ namespace osuCrypto
         init();
     }
 
-
-    REccNumber::REccNumber(PRNG& prng)
+    REccNumber::REccNumber(PRNG &prng)
     {
         init();
         randomize(prng);
     }
 
-    REccNumber::REccNumber(const i32& val)
+    REccNumber::REccNumber(const i32 &val)
     {
         init();
         *this = val;
     }
 
-
-    REccNumber::REccNumber(REllipticCurve&, const REccNumber& num)
+    REccNumber::REccNumber(REllipticCurve &, const REccNumber &num)
     {
         init();
         *this = num;
     }
 
-    REccNumber::REccNumber(REllipticCurve&)
+    REccNumber::REccNumber(REllipticCurve &)
     {
         init();
     }
 
-
-    REccNumber::REccNumber(REllipticCurve&, PRNG& prng)
+    REccNumber::REccNumber(REllipticCurve &, PRNG &prng)
     {
         init();
         randomize(prng);
     }
 
-    REccNumber::REccNumber(REllipticCurve&, const i32& val)
+    REccNumber::REccNumber(REllipticCurve &, const i32 &val)
     {
         init();
         *this = val;
@@ -88,15 +82,15 @@ namespace osuCrypto
         bn_clean(*this);
     }
 
-    REccNumber& REccNumber::operator=(const REccNumber& c)
+    REccNumber &REccNumber::operator=(const REccNumber &c)
     {
         *this = c.mVal;
         return *this;
     }
 
-    REccNumber& REccNumber::operator=(const bn_t c)
+    REccNumber &REccNumber::operator=(const bn_t c)
     {
-        if(!core_get())
+        if (!core_get())
             throw std::runtime_error("Relic core not initialized on this thread. Construct a RCurve to initialize it. " LOCATION);
 
         bn_copy(*this, c);
@@ -107,7 +101,7 @@ namespace osuCrypto
         return *this;
     }
 
-    REccNumber& REccNumber::operator=(int i)
+    REccNumber &REccNumber::operator=(int i)
     {
         if (!core_get())
             throw std::runtime_error("Relic core not initialized on this thread. Construct a RCurve to initialize it. " LOCATION);
@@ -129,17 +123,17 @@ namespace osuCrypto
         return *this;
     }
 
-    REccNumber& REccNumber::operator++()
+    REccNumber &REccNumber::operator++()
     {
         return *this += 1;
     }
 
-    REccNumber& REccNumber::operator--()
+    REccNumber &REccNumber::operator--()
     {
         return *this -= 1;
     }
 
-    REccNumber& REccNumber::operator+=(int i)
+    REccNumber &REccNumber::operator+=(int i)
     {
         if (i < 0)
             return *this -= -i;
@@ -156,7 +150,7 @@ namespace osuCrypto
         return *this;
     }
 
-    REccNumber& REccNumber::operator-=(int i)
+    REccNumber &REccNumber::operator-=(int i)
     {
         if (i < 0)
             return *this += -i;
@@ -171,7 +165,7 @@ namespace osuCrypto
         return *this;
     }
 
-    REccNumber& REccNumber::operator+=(const REccNumber& b)
+    REccNumber &REccNumber::operator+=(const REccNumber &b)
     {
         if (!core_get())
             throw std::runtime_error("Relic core not initialized on this thread. Construct a RCurve to initialize it. " LOCATION);
@@ -184,7 +178,7 @@ namespace osuCrypto
         return *this;
     }
 
-    REccNumber& REccNumber::operator-=(const REccNumber& b)
+    REccNumber &REccNumber::operator-=(const REccNumber &b)
     {
         if (!core_get())
             throw std::runtime_error("Relic core not initialized on this thread. Construct a RCurve to initialize it. " LOCATION);
@@ -197,7 +191,7 @@ namespace osuCrypto
         return *this;
     }
 
-    REccNumber& REccNumber::operator*=(const REccNumber& b)
+    REccNumber &REccNumber::operator*=(const REccNumber &b)
     {
         if (!core_get())
             throw std::runtime_error("Relic core not initialized on this thread. Construct a RCurve to initialize it. " LOCATION);
@@ -211,7 +205,7 @@ namespace osuCrypto
         return *this;
     }
 
-    REccNumber& REccNumber::operator*=(int i)
+    REccNumber &REccNumber::operator*=(int i)
     {
         if (i < 0)
             return *this *= REccNumber(i);
@@ -227,12 +221,12 @@ namespace osuCrypto
         return *this;
     }
 
-    REccNumber& REccNumber::operator/=(const REccNumber& b)
+    REccNumber &REccNumber::operator/=(const REccNumber &b)
     {
         return (*this *= b.inverse());
     }
 
-    REccNumber& REccNumber::operator/=(int i)
+    REccNumber &REccNumber::operator/=(int i)
     {
         if (i < 0)
             return *this /= REccNumber(i);
@@ -251,7 +245,7 @@ namespace osuCrypto
     void REccNumber::init()
     {
         bn_new(mVal);
-        //bn_init(mVal, static_cast<int>(sizeDigits()));
+        // bn_init(mVal, static_cast<int>(sizeDigits()));
     }
 
     void REccNumber::reduce()
@@ -259,15 +253,14 @@ namespace osuCrypto
         if (!core_get())
             throw std::runtime_error("Relic core not initialized on this thread. Construct a RCurve to initialize it. " LOCATION);
 
-        //auto t = *this;
+        // auto t = *this;
         bn_mod_basic(*this, *this, modulus());
 
         if (GSL_UNLIKELY(err_get_code()))
             throw std::runtime_error("Relic mod error " LOCATION);
-
     }
 
-    const bn_st* REccNumber::modulus() const { return &core_get()->ep_r; }
+    const bn_st *REccNumber::modulus() const { return &core_get()->ep_r; }
 
     REccNumber REccNumber::negate() const
     {
@@ -301,7 +294,7 @@ namespace osuCrypto
         return bInv;
     }
 
-    bool REccNumber::operator==(const REccNumber& cmp) const
+    bool REccNumber::operator==(const REccNumber &cmp) const
     {
         if (!core_get())
             throw std::runtime_error("Relic core not initialized on this thread. Construct a RCurve to initialize it. " LOCATION);
@@ -309,7 +302,7 @@ namespace osuCrypto
         return bn_cmp(*this, cmp) == RLC_EQ;
     }
 
-    bool REccNumber::operator==(const int& cmp) const
+    bool REccNumber::operator==(const int &cmp) const
     {
         if (!core_get())
             throw std::runtime_error("Relic core not initialized on this thread. Construct a RCurve to initialize it. " LOCATION);
@@ -320,25 +313,25 @@ namespace osuCrypto
         return bn_cmp_dig(*this, cmp) == RLC_EQ;
     }
 
-    bool REccNumber::operator!=(const REccNumber& cmp) const
+    bool REccNumber::operator!=(const REccNumber &cmp) const
     {
         return !(*this == cmp);
     }
 
-    bool REccNumber::operator!=(const int& cmp) const
+    bool REccNumber::operator!=(const int &cmp) const
     {
         return !(*this == cmp);
     }
 
-    bool REccNumber::operator>=(const REccNumber& cmp) const
+    bool REccNumber::operator>=(const REccNumber &cmp) const
     {
         if (!core_get())
             throw std::runtime_error("Relic core not initialized on this thread. Construct a RCurve to initialize it. " LOCATION);
 
-        return  bn_cmp(*this, cmp) != RLC_LT;
+        return bn_cmp(*this, cmp) != RLC_LT;
     }
 
-    bool REccNumber::operator>=(const int& cmp) const
+    bool REccNumber::operator>=(const int &cmp) const
     {
         if (cmp < 0)
             return *this >= REccNumber(cmp);
@@ -348,13 +341,12 @@ namespace osuCrypto
         return bn_cmp_dig(*this, cmp) != RLC_LT;
     }
 
-    bool REccNumber::operator<=(const REccNumber& cmp) const
+    bool REccNumber::operator<=(const REccNumber &cmp) const
     {
         return cmp >= *this;
     }
 
-
-    bool REccNumber::operator<=(const int& cmp) const
+    bool REccNumber::operator<=(const int &cmp) const
     {
         if (cmp < 0)
             return *this <= REccNumber(cmp);
@@ -364,7 +356,7 @@ namespace osuCrypto
         return bn_cmp_dig(*this, cmp) != RLC_GT;
     }
 
-    bool REccNumber::operator>(const REccNumber& cmp) const
+    bool REccNumber::operator>(const REccNumber &cmp) const
     {
         if (!core_get())
             throw std::runtime_error("Relic core not initialized on this thread. Construct a RCurve to initialize it. " LOCATION);
@@ -372,7 +364,7 @@ namespace osuCrypto
         return bn_cmp(*this, cmp) == RLC_GT;
     }
 
-    bool REccNumber::operator>(const int& cmp) const
+    bool REccNumber::operator>(const int &cmp) const
     {
         if (cmp < 0)
             return *this > REccNumber(cmp);
@@ -382,12 +374,12 @@ namespace osuCrypto
         return bn_cmp_dig(*this, cmp) == RLC_GT;
     }
 
-    bool REccNumber::operator<(const REccNumber& cmp) const
+    bool REccNumber::operator<(const REccNumber &cmp) const
     {
-        return cmp > * this;
+        return cmp > *this;
     }
 
-    bool REccNumber::operator<(const int& cmp) const
+    bool REccNumber::operator<(const int &cmp) const
     {
         if (cmp < 0)
             return *this < REccNumber(cmp);
@@ -413,22 +405,22 @@ namespace osuCrypto
         return bn_is_zero(*this);
     }
 
-    bool operator==(const int& cmp1, const REccNumber& cmp2)
+    bool operator==(const int &cmp1, const REccNumber &cmp2)
     {
         return cmp2 == cmp1;
     }
 
-    bool operator!=(const int& cmp1, const REccNumber& cmp2)
+    bool operator!=(const int &cmp1, const REccNumber &cmp2)
     {
         return cmp2 != cmp1;
     }
 
-    REccNumber operator-(const REccNumber& v)
+    REccNumber operator-(const REccNumber &v)
     {
         return v.negate();
     }
 
-    REccNumber operator+(int i, const REccNumber& v)
+    REccNumber operator+(int i, const REccNumber &v)
     {
         if (i < 0)
             return REccNumber(i) + v;
@@ -444,7 +436,7 @@ namespace osuCrypto
         r.reduce();
         return r;
     }
-    REccNumber operator+(const REccNumber& i, const REccNumber& v)
+    REccNumber operator+(const REccNumber &i, const REccNumber &v)
     {
         if (!core_get())
             throw std::runtime_error("Relic core not initialized on this thread. Construct a RCurve to initialize it. " LOCATION);
@@ -458,7 +450,7 @@ namespace osuCrypto
         r.reduce();
         return r;
     }
-    REccNumber operator-(const REccNumber& v, int i)
+    REccNumber operator-(const REccNumber &v, int i)
     {
         if (i < 0)
             return v - REccNumber(i);
@@ -474,11 +466,11 @@ namespace osuCrypto
         r.reduce();
         return r;
     }
-    REccNumber operator-(int i, const REccNumber& v)
+    REccNumber operator-(int i, const REccNumber &v)
     {
         return i + v.negate();
     }
-    REccNumber operator-(const REccNumber& v, const REccNumber& i)
+    REccNumber operator-(const REccNumber &v, const REccNumber &i)
     {
         if (!core_get())
             throw std::runtime_error("Relic core not initialized on this thread. Construct a RCurve to initialize it. " LOCATION);
@@ -492,7 +484,7 @@ namespace osuCrypto
         r.reduce();
         return r;
     }
-    REccNumber operator*(const REccNumber& v, int i)
+    REccNumber operator*(const REccNumber &v, int i)
     {
         if (i < 0)
             return v * REccNumber(i);
@@ -508,11 +500,11 @@ namespace osuCrypto
         r.reduce();
         return r;
     }
-    REccNumber operator*(int i, const REccNumber& v)
+    REccNumber operator*(int i, const REccNumber &v)
     {
         return v * i;
     }
-    REccNumber operator*(const REccNumber& v, const REccNumber& i)
+    REccNumber operator*(const REccNumber &v, const REccNumber &i)
     {
         if (!core_get())
             throw std::runtime_error("Relic core not initialized on this thread. Construct a RCurve to initialize it. " LOCATION);
@@ -526,22 +518,22 @@ namespace osuCrypto
         r.reduce();
         return r;
     }
-    REccNumber operator/(const REccNumber& v, int i)
+    REccNumber operator/(const REccNumber &v, int i)
     {
         auto vv = v;
         vv /= i;
         return vv;
     }
-    REccNumber operator/(int i, const REccNumber& v)
+    REccNumber operator/(int i, const REccNumber &v)
     {
         return i * v.inverse();
     }
-    REccNumber operator/(const REccNumber& i, const REccNumber& v)
+    REccNumber operator/(const REccNumber &i, const REccNumber &v)
     {
         return i * v.inverse();
     }
 
-    REccNumber operator^(const REccNumber& base, const REccNumber& exp)
+    REccNumber operator^(const REccNumber &base, const REccNumber &exp)
     {
         if (!core_get())
             throw std::runtime_error("Relic core not initialized on this thread. Construct a RCurve to initialize it. " LOCATION);
@@ -549,14 +541,13 @@ namespace osuCrypto
         REccNumber r;
         bn_mxp_basic(r, base, exp, base.modulus());
 
-
         if (GSL_UNLIKELY(err_get_code()))
             throw std::runtime_error("Relic exp error " LOCATION);
 
         return r;
     }
 
-    std::ostream& operator<<(std::ostream& out, const REccNumber& val)
+    std::ostream &operator<<(std::ostream &out, const REccNumber &val)
     {
         if (!core_get())
             throw std::runtime_error("Relic core not initialized on this thread. Construct a RCurve to initialize it. " LOCATION);
@@ -576,15 +567,15 @@ namespace osuCrypto
         return out;
     }
 
-    std::ostream& operator<<(std::ostream& out, const REccPoint& val)
+    std::ostream &operator<<(std::ostream &out, const REccPoint &val)
     {
         if (!core_get())
             throw std::runtime_error("Relic core not initialized on this thread. Construct a RCurve to initialize it. " LOCATION);
 
         auto radix = 16;
 
-        auto print = [radix](std::ostream& out, const fp_t& c) {
-
+        auto print = [radix](std::ostream &out, const fp_t &c)
+        {
             std::string buff(RLC_FP_BYTES * 2 + 1, ' ');
 
             if (i64(buff.size()) < i64(fp_size_str(c, radix)))
@@ -615,7 +606,7 @@ namespace osuCrypto
         return out;
     }
 
-    REccNumber operator+(const REccNumber& v, int i)
+    REccNumber operator+(const REccNumber &v, int i)
     {
         if (i < 0)
             return v + REccNumber(i);
@@ -674,7 +665,7 @@ namespace osuCrypto
 
     std::vector<REllipticCurve::Point> REllipticCurve::getGenerators() const
     {
-        return { getGenerator() };
+        return {getGenerator()};
     }
 
     REccNumber REllipticCurve::getOrder() const
@@ -690,8 +681,7 @@ namespace osuCrypto
         return g;
     }
 
-
-    bool REccPoint::iszero()const
+    bool REccPoint::iszero() const
     {
         if (!core_get())
             throw std::runtime_error("Relic core not initialized on this thread. Construct a RCurve to initialize it. " LOCATION);
@@ -699,7 +689,7 @@ namespace osuCrypto
         return ep_is_infty(*this);
     }
 
-    REccPoint& REccPoint::operator=(const REccPoint& copy)
+    REccPoint &REccPoint::operator=(const REccPoint &copy)
     {
         if (!core_get())
             throw std::runtime_error("Relic core not initialized on this thread. Construct a RCurve to initialize it. " LOCATION);
@@ -708,7 +698,7 @@ namespace osuCrypto
         return *this;
     }
 
-    REccPoint& REccPoint::operator+=(const REccPoint& addIn)
+    REccPoint &REccPoint::operator+=(const REccPoint &addIn)
     {
         if (!core_get())
             throw std::runtime_error("Relic core not initialized on this thread. Construct a RCurve to initialize it. " LOCATION);
@@ -720,7 +710,7 @@ namespace osuCrypto
         return *this;
     }
 
-    REccPoint& REccPoint::operator-=(const REccPoint& subtractIn)
+    REccPoint &REccPoint::operator-=(const REccPoint &subtractIn)
     {
         if (!core_get())
             throw std::runtime_error("Relic core not initialized on this thread. Construct a RCurve to initialize it. " LOCATION);
@@ -731,7 +721,7 @@ namespace osuCrypto
         return *this;
     }
 
-    REccPoint& REccPoint::operator*=(const REccNumber& multIn)
+    REccPoint &REccPoint::operator*=(const REccNumber &multIn)
     {
         if (!core_get())
             throw std::runtime_error("Relic core not initialized on this thread. Construct a RCurve to initialize it. " LOCATION);
@@ -742,7 +732,7 @@ namespace osuCrypto
         return *this;
     }
 
-    REccPoint REccPoint::operator+(const REccPoint& addIn) const
+    REccPoint REccPoint::operator+(const REccPoint &addIn) const
     {
         if (!core_get())
             throw std::runtime_error("Relic core not initialized on this thread. Construct a RCurve to initialize it. " LOCATION);
@@ -754,7 +744,7 @@ namespace osuCrypto
         return r;
     }
 
-    REccPoint REccPoint::operator-(const REccPoint& subtractIn) const
+    REccPoint REccPoint::operator-(const REccPoint &subtractIn) const
     {
         if (!core_get())
             throw std::runtime_error("Relic core not initialized on this thread. Construct a RCurve to initialize it. " LOCATION);
@@ -766,7 +756,7 @@ namespace osuCrypto
         return r;
     }
 
-    REccPoint REccPoint::operator*(const REccNumber& multIn) const
+    REccPoint REccPoint::operator*(const REccNumber &multIn) const
     {
         if (!core_get())
             throw std::runtime_error("Relic core not initialized on this thread. Construct a RCurve to initialize it. " LOCATION);
@@ -778,7 +768,8 @@ namespace osuCrypto
         return r;
     }
 
-    REccPoint REccPoint::mulGenerator(const REccNumber& n)
+    // 将椭圆曲线的生成元（通常是基点）与一个标量相乘，从而生成一个新的椭圆曲线点
+    REccPoint REccPoint::mulGenerator(const REccNumber &n)
     {
         if (!core_get())
             throw std::runtime_error("Relic core not initialized on this thread. Construct a RCurve to initialize it. " LOCATION);
@@ -790,7 +781,7 @@ namespace osuCrypto
         return r;
     }
 
-    bool REccPoint::operator==(const REccPoint& cmp) const
+    bool REccPoint::operator==(const REccPoint &cmp) const
     {
         if (!core_get())
             throw std::runtime_error("Relic core not initialized on this thread. Construct a RCurve to initialize it. " LOCATION);
@@ -798,7 +789,7 @@ namespace osuCrypto
         return ep_cmp(*this, cmp) == RLC_EQ;
     }
 
-    bool REccPoint::operator!=(const REccPoint& cmp) const
+    bool REccPoint::operator!=(const REccPoint &cmp) const
     {
         if (!core_get())
             throw std::runtime_error("Relic core not initialized on this thread. Construct a RCurve to initialize it. " LOCATION);
@@ -806,7 +797,7 @@ namespace osuCrypto
         return ep_cmp(*this, cmp) != RLC_EQ;
     }
 
-    void REccPoint::fromHash(const unsigned char* data, size_t len)
+    void REccPoint::fromHash(const unsigned char *data, size_t len)
     {
         if (!core_get())
             throw std::runtime_error("Relic core not initialized on this thread. Construct a RCurve to initialize it. " LOCATION);
@@ -814,7 +805,7 @@ namespace osuCrypto
         ep_map(*this, data, len);
     }
 
-    void REccPoint::toBytes(u8* dest) const
+    void REccPoint::toBytes(u8 *dest) const
     {
         if (!core_get())
             throw std::runtime_error("Relic core not initialized on this thread. Construct a RCurve to initialize it. " LOCATION);
@@ -824,7 +815,7 @@ namespace osuCrypto
             throw std::runtime_error("Relic ep_write error " LOCATION);
     }
 
-    void REccPoint::fromBytes(u8* src)
+    void REccPoint::fromBytes(u8 *src)
     {
         if (!core_get())
             throw std::runtime_error("Relic core not initialized on this thread. Construct a RCurve to initialize it. " LOCATION);
@@ -833,8 +824,6 @@ namespace osuCrypto
         if (GSL_UNLIKELY(err_get_code()))
             throw std::runtime_error("Relic ep_read error " LOCATION);
     }
-
-
 
     namespace
     {
@@ -845,7 +834,8 @@ namespace osuCrypto
 #define RLC_FINALLY FINALLY
 #endif // !RLC_TRY
 
-        void bn_rand(bn_t a, int sign, int bits, PRNG& prng) {
+        void bn_rand(bn_t a, int sign, int bits, PRNG &prng)
+        {
             int digits;
 
             RLC_RIP(bits, digits, bits);
@@ -853,55 +843,63 @@ namespace osuCrypto
 
             bn_grow(a, digits);
 
-            prng.get((uint8_t*)a->dp, digits * sizeof(dig_t));
+            prng.get((uint8_t *)a->dp, digits * sizeof(dig_t));
 
             a->used = digits;
             a->sign = sign;
-            if (bits > 0) {
+            if (bits > 0)
+            {
                 dig_t mask = ((dig_t)1 << (dig_t)bits) - 1;
                 a->dp[a->used - 1] &= mask;
             }
             bn_trim(a);
         }
 
-        void bn_rand_mod(bn_t a, bn_t b, PRNG& prng) {
-            do {
+        void bn_rand_mod(bn_t a, bn_t b, PRNG &prng)
+        {
+            do
+            {
                 bn_rand(a, bn_sign(b), bn_bits(b) + 40, prng);
                 bn_mod(a, a, b);
             } while (bn_is_zero(a) || bn_cmp_abs(a, b) != RLC_LT);
         }
 
-        void ep_rand(ep_t p, PRNG& prng) {
+        void ep_rand(ep_t p, PRNG &prng)
+        {
             bn_t n, k;
 
             bn_null(k);
             bn_null(n);
 
-            RLC_TRY{
+            RLC_TRY
+            {
                 bn_new(k);
                 bn_new(n);
                 ep_curve_get_ord(n);
                 bn_rand_mod(k, n, prng);
 
                 ep_mul_gen(p, k);
-            } RLC_CATCH_ANY{
+            }
+            RLC_CATCH_ANY
+            {
                 RLC_THROW(ERR_CAUGHT);
-            } RLC_FINALLY{
+            }
+            RLC_FINALLY
+            {
                 bn_free(k);
                 bn_free(n);
             }
         }
     }
 
-
-    void REccPoint::randomize(PRNG& prng)
+    void REccPoint::randomize(PRNG &prng)
     {
         ep_rand(*this, prng);
         if (GSL_UNLIKELY(err_get_code()))
             throw std::runtime_error("Relic ep_rand error " LOCATION);
     }
 
-    void REccPoint::randomize(const block& seed)
+    void REccPoint::randomize(const block &seed)
     {
         PRNG prng(seed);
         randomize(prng);
@@ -920,25 +918,24 @@ namespace osuCrypto
 
     u64 REccNumber::sizeBytes() const
     {
-        return
-            bn_size_bin(modulus());
+        return bn_size_bin(modulus());
     }
 
-    void REccNumber::toBytes(u8* dest) const
+    void REccNumber::toBytes(u8 *dest) const
     {
         bn_write_bin(dest, static_cast<int>(sizeBytes()), *this);
         if (GSL_UNLIKELY(err_get_code()))
             throw std::runtime_error("Relic write error " LOCATION);
     }
 
-    void REccNumber::fromBytes(const u8* src)
+    void REccNumber::fromBytes(const u8 *src)
     {
         bn_read_bin(*this, src, static_cast<int>(sizeBytes()));
         if (GSL_UNLIKELY(err_get_code()))
             throw std::runtime_error("Relic read error " LOCATION);
     }
 
-    void REccNumber::fromHex(const char* src)
+    void REccNumber::fromHex(const char *src)
     {
         auto len = std::strlen(src);
         bn_read_str(*this, src, static_cast<int>(len), 16);
@@ -946,7 +943,7 @@ namespace osuCrypto
             throw std::runtime_error("Relic read error " LOCATION);
     }
 
-    void REccNumber::randomize(PRNG& prng)
+    void REccNumber::randomize(PRNG &prng)
     {
         std::vector<u8> buff(sizeBytes() + 5);
         prng.get(buff.data(), buff.size());
@@ -957,7 +954,7 @@ namespace osuCrypto
         reduce();
     }
 
-    void REccNumber::randomize(const block& seed)
+    void REccNumber::randomize(const block &seed)
     {
         PRNG prng(seed);
         randomize(prng);
