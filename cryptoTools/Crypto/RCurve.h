@@ -151,7 +151,10 @@ namespace osuCrypto
         // 调用 randomize(PRNG &prng) 方法生成随机的大整数值
         void randomize(const block &seed);
 
-        operator bn_t &() { return mVal; }
+        operator bn_t &()
+        {
+            return mVal;
+        }
         operator const bn_t &() const { return mVal; }
 
     private:
@@ -291,8 +294,8 @@ namespace osuCrypto
         // 将常量的 REccPoint 对象转换为对应的 ep_t 类型的常量引用
         operator const ep_t &() const { return mVal; }
 
-        // ((int)((256-1)/8+1))+1=32+1=33
-        static const u64 size = 1 + RLC_FP_BYTES;
+        // ((int)((256-1)/8+1))+1=32+1=33, NISY-P256 多出来的1字节是eccPoint的编码格式, 紧凑编码
+        static const u64 size = RLC_FP_BYTES + 1;
 
         // ep_t 表示椭圆曲线上的一个点，其中包括该点的坐标以及坐标的表示方式
         ep_t mVal;
@@ -332,6 +335,7 @@ namespace osuCrypto
     public:
         typedef REccPoint Point;
 
+        // 默认为 NIST-P256, 方程为 y^2 = x^3 + ax + b mod q
         REllipticCurve(u64 curveID = 0);
 
         // 获取椭圆曲线的生成元
@@ -342,6 +346,8 @@ namespace osuCrypto
 
         // 获取椭圆曲线的阶数（Order）。阶数是椭圆曲线上的点的数量，包括无穷远点。
         REccNumber getOrder() const;
+
+        void printCurveParam() const;
 
     private:
         friend Point;

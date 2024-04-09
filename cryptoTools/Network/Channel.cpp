@@ -365,7 +365,8 @@ namespace osuCrypto {
         mBackoff = std::min(mBackoff * 1.2, 1000.0);
         if (mBackoff >= 1000.0)
         {
-            mChl->mIos.printError("client socket connect error (hangs).");
+            // todo: 不想看这么多提示
+            // mChl->mIos.printError("client socket connect error (hangs).");
         }
         
         mIsFirst = true;

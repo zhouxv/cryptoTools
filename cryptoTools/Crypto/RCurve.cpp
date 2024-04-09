@@ -260,7 +260,10 @@ namespace osuCrypto
             throw std::runtime_error("Relic mod error " LOCATION);
     }
 
-    const bn_st *REccNumber::modulus() const { return &core_get()->ep_r; }
+    const bn_st *REccNumber::modulus() const
+    {
+        return &core_get()->ep_r;
+    }
 
     REccNumber REccNumber::negate() const
     {
@@ -663,6 +666,14 @@ namespace osuCrypto
         // TODO: insert return statement here
     }
 
+    void REllipticCurve::printCurveParam() const
+    {
+        if (!core_get())
+            throw std::runtime_error("Relic core not initialized on this thread. Construct a RCurve to initialize it. " LOCATION);
+
+        ep_param_print();
+    }
+
     std::vector<REllipticCurve::Point> REllipticCurve::getGenerators() const
     {
         return {getGenerator()};
@@ -904,6 +915,7 @@ namespace osuCrypto
         PRNG prng(seed);
         randomize(prng);
     }
+
     void REccPoint::randomize()
     {
         ::ep_rand(*this);
