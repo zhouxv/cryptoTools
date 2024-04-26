@@ -12,42 +12,40 @@
 
 #include "libdivide.h"
 
-
 namespace osuCrypto
 {
     struct Mod
     {
+        // libdivide 库中定义的用于无符号 64 位整数除法，可以用于执行除法和模运算
         libdivide::libdivide_u64_t mDiv;
+        // 模运算的模数
         u64 mVal;
 
         Mod() = default;
         Mod(u64 v)
-            : mDiv(libdivide::libdivide_u64_gen(v))
-            , mVal(v)
-        {}
+            : mDiv(libdivide::libdivide_u64_gen(v)), mVal(v)
+        {
+        }
 
-        Mod(const Mod&) = default;
-        Mod& operator=(const Mod&o) = default;
-
-
-
+        Mod(const Mod &) = default;
+        Mod &operator=(const Mod &o) = default;
 
 #ifdef ENABLE_SSE
         using block256 = __m256i;
-        inline block256 my_libdivide_u64_do_vec256(const block256& x)
+        inline block256 my_libdivide_u64_do_vec256(const block256 &x)
         {
             return libdivide::libdivide_u64_do_vec256(x, &mDiv);
         }
 #else
         using block256 = std::array<block, 2>;
 
-        inline block256 _mm256_loadu_si256(block256* p) { return *p; }
+        inline block256 _mm256_loadu_si256(block256 *p) { return *p; }
 
-        inline block256 my_libdivide_u64_do_vec256(const block256& x)
+        inline block256 my_libdivide_u64_do_vec256(const block256 &x)
         {
             block256 y;
-            auto x64 = (u64*)&x;
-            auto y64 = (u64*)&y;
+            auto x64 = (u64 *)&x;
+            auto y64 = (u64 *)&y;
             for (u64 i = 0; i < 4; ++i)
             {
                 y64[i] = libdivide::libdivide_u64_do(x64[i], &mDiv);
@@ -57,25 +55,30 @@ namespace osuCrypto
         }
 #endif
 
+        // 计算 val mod mval
         u64 mod(u64 val)
         {
             return val - libdivide::libdivide_u64_do(val, &mDiv) * mVal;
         }
 
-        inline void mod32(u64* vals)
+        // 对一个包含32个64位整数的数组进行模运算
+        // 函数首先将数组中的数据加载到8个256位整数变量中（每个变量包含4个64位整数）
+        // 对每个256位整数变量进行模运算
+        // 将结果更新回原始数组中
+        inline void mod32(u64 *vals)
         {
-            //std::array<u64, 4> temp64;
-            //for (u64 i = 0; i < 32; i += 16)
+            // std::array<u64, 4> temp64;
+            // for (u64 i = 0; i < 32; i += 16)
             {
                 u64 i = 0;
-                block256 row256a = _mm256_loadu_si256((block256*)&vals[i]);
-                block256 row256b = _mm256_loadu_si256((block256*)&vals[i + 4]);
-                block256 row256c = _mm256_loadu_si256((block256*)&vals[i + 8]);
-                block256 row256d = _mm256_loadu_si256((block256*)&vals[i + 12]);
-                block256 row256e = _mm256_loadu_si256((block256*)&vals[i + 16]);
-                block256 row256f = _mm256_loadu_si256((block256*)&vals[i + 20]);
-                block256 row256g = _mm256_loadu_si256((block256*)&vals[i + 24]);
-                block256 row256h = _mm256_loadu_si256((block256*)&vals[i + 28]);
+                block256 row256a = _mm256_loadu_si256((block256 *)&vals[i]);
+                block256 row256b = _mm256_loadu_si256((block256 *)&vals[i + 4]);
+                block256 row256c = _mm256_loadu_si256((block256 *)&vals[i + 8]);
+                block256 row256d = _mm256_loadu_si256((block256 *)&vals[i + 12]);
+                block256 row256e = _mm256_loadu_si256((block256 *)&vals[i + 16]);
+                block256 row256f = _mm256_loadu_si256((block256 *)&vals[i + 20]);
+                block256 row256g = _mm256_loadu_si256((block256 *)&vals[i + 24]);
+                block256 row256h = _mm256_loadu_si256((block256 *)&vals[i + 28]);
                 auto tempa = my_libdivide_u64_do_vec256(row256a);
                 auto tempb = my_libdivide_u64_do_vec256(row256b);
                 auto tempc = my_libdivide_u64_do_vec256(row256c);
@@ -84,15 +87,15 @@ namespace osuCrypto
                 auto tempf = my_libdivide_u64_do_vec256(row256f);
                 auto tempg = my_libdivide_u64_do_vec256(row256g);
                 auto temph = my_libdivide_u64_do_vec256(row256h);
-                //auto temp = libdivide::libdivide_u64_branchfree_do_vec256(row256, &mDiv);
-                auto temp64a = (u64*)&tempa;
-                auto temp64b = (u64*)&tempb;
-                auto temp64c = (u64*)&tempc;
-                auto temp64d = (u64*)&tempd;
-                auto temp64e = (u64*)&tempe;
-                auto temp64f = (u64*)&tempf;
-                auto temp64g = (u64*)&tempg;
-                auto temp64h = (u64*)&temph;
+                // auto temp = libdivide::libdivide_u64_branchfree_do_vec256(row256, &mDiv);
+                auto temp64a = (u64 *)&tempa;
+                auto temp64b = (u64 *)&tempb;
+                auto temp64c = (u64 *)&tempc;
+                auto temp64d = (u64 *)&tempd;
+                auto temp64e = (u64 *)&tempe;
+                auto temp64f = (u64 *)&tempf;
+                auto temp64g = (u64 *)&tempg;
+                auto temp64h = (u64 *)&temph;
                 vals[i + 0] -= temp64a[0] * mVal;
                 vals[i + 1] -= temp64a[1] * mVal;
                 vals[i + 2] -= temp64a[2] * mVal;
@@ -129,18 +132,25 @@ namespace osuCrypto
         }
     };
 
-
     // The parameters that define a cuckoo table.
+    // stashSize、scaler、numHash、setSize
+    // 存储 CuckooHash 的参数——stashSize、scaler、numHash、setSize
     struct CuckooParam
     {
         u64 mStashSize;
         double mBinScaler;
         u64 mNumHashes, mN;
 
+        // 返回bins的数量
         u64 numBins() { return std::max<u64>(mNumHashes, static_cast<u64>(mN * mBinScaler)); }
+
+        // 创建一个掩码，可以在后续的位运算中用于只保留哈希结果的低位，以便将哈希结果映射到哈希表的索引范围内
+        // ull 为 64 位 unsigned long long
+        // 1 左移 log2ceil(numBins()) 位，-1 后得到低 log2ceil(numBins()) 均为 1 的掩码
         u64 binMask() { return (1ull << log2ceil(numBins())) - 1; }
     };
 
+    // extern 是 C / C++ 中的一个关键字，用于声明一个外部变量或者函数
     extern CuckooParam k2n32s40CuckooParam;
     extern CuckooParam k2n30s40CuckooParam;
     extern CuckooParam k2n28s40CuckooParam;
@@ -158,6 +168,7 @@ namespace osuCrypto
     extern CuckooParam k2n01s40CuckooParam;
 
     // Two variants of the Cuckoo implementation.
+    // Cuckoo 的两种实现，线程安全和线程不安全
     enum CuckooTypes
     {
         ThreadSafe,
@@ -165,18 +176,28 @@ namespace osuCrypto
     };
 
     // Two variants of the Cuckoo values.
-    template<CuckooTypes M> struct CuckooStorage;
+    template <CuckooTypes M>
+    struct CuckooStorage;
 
     // Thread safe version requires atomic u64
-    template<> struct CuckooStorage<ThreadSafe> { std::atomic<u64> mVal; };
+    // 线程安全版本的CuckooStorage，atomic u64
+    template <>
+    struct CuckooStorage<ThreadSafe>
+    {
+        std::atomic<u64> mVal;
+    };
 
     // Not Thread safe version only requires u64.
-    template<> struct CuckooStorage<NotThreadSafe> { u64 mVal; };
-
+    // 非线程安全版本的CuckooStorage，u64
+    template <>
+    struct CuckooStorage<NotThreadSafe>
+    {
+        u64 mVal;
+    };
 
     // A cuckoo hashing implementation. The cuckoo hash table takes {value, index}
-    // pairs as input and stores the index. 
-    template<CuckooTypes Mode = ThreadSafe>
+    // pairs as input and stores the index.
+    template <CuckooTypes Mode = ThreadSafe>
     class CuckooIndex
     {
 
@@ -187,29 +208,50 @@ namespace osuCrypto
         // the maximum number of hash functions that are allowed.
 #define CUCKOOINDEX_MAX_HASH_FUNCTION_COUNT 3
 
-
-        u64 mReinsertLimit = 200;
-        u64 mNumBins, mNumBinMask;
-        //std::vector<u8> mRandHashIdx;
-        //PRNG mPrng;
-
         struct Bin
         {
+            // 64 位，高8位为 hashIdx ，低56位为 idx
             CuckooStorage<Mode> mS;
 
-            Bin() {
+            // 默认初始化函数，将 CuckooStorage 的 mVal 设置为-1
+            Bin()
+            {
                 mS.mVal = (-1);
             }
-            Bin(u64 idx, u64 hashIdx) { mS.mVal = (idx | (hashIdx << 56)); }
-            Bin(const Bin& b) { mS.mVal = (b.load()); }
 
-            bool isEmpty() const { return  load() == u64(-1); }
-            u64 idx() const { return  load() & (u64(-1) >> 8); }
-            u64 hashIdx() const { return  load() >> 56; }
+            // 将 hashIdx 左移了 56 位，然后与 idx 进行按位或操作
+            Bin(u64 idx, u64 hashIdx)
+            {
+                mS.mVal = (idx | (hashIdx << 56));
+            }
 
+            // 拷贝构造函数
+            Bin(const Bin &b)
+            {
+                mS.mVal = (b.load());
+            }
 
+            // 判断当前 Bin 是否为空
+            bool isEmpty() const
+            {
+                return load() == u64(-1);
+            }
 
-            void swap(u64& idx, u64& hashIdx)
+            // 返回 idx
+            u64 idx() const
+            {
+                return load() & (u64(-1) >> 8);
+            }
+
+            // 返回 hashIdx
+            u64 hashIdx() const
+            {
+                return load() >> 56;
+            }
+
+            // 原子交换 Bin 对象的值
+            // 根据 CuckooTypes 调用 exchange 函数
+            void swap(u64 &idx, u64 &hashIdx)
             {
                 u64 newVal = idx | (hashIdx << 56);
                 auto oldVal = exchange(newVal);
@@ -217,50 +259,121 @@ namespace osuCrypto
                 hashIdx = (oldVal >> 56);
             }
 
-            template<CuckooTypes M = Mode>
-            typename std::enable_if< M == ThreadSafe, u64>::type exchange(u64 newVal) { return mS.mVal.exchange(newVal, std::memory_order_relaxed); }
-            template<CuckooTypes M = Mode>
-            typename std::enable_if< M == ThreadSafe, u64>::type load() const { return mS.mVal.load(std::memory_order_relaxed); }
+            // 原子地交换 Bin 对象的值（线程安全的实现）
+            // 赋新值, 返回旧值
+            template <CuckooTypes M = Mode>
+            typename std::enable_if<M == ThreadSafe, u64>::type exchange(u64 newVal)
+            {
+                return mS.mVal.exchange(newVal, std::memory_order_relaxed);
+            }
 
+            // 在 ThreadSafe 的情况下
+            // 使用了 std::atomic 类型的 load 函数来获取 mS.mVal 的值
+            // 指定了 std::memory_order_relaxed 内存顺序，表示没有同步或者排序约束
+            template <CuckooTypes M = Mode>
+            typename std::enable_if<M == ThreadSafe, u64>::type load() const
+            {
+                return mS.mVal.load(std::memory_order_relaxed);
+            }
 
-            template<CuckooTypes M = Mode>
-            typename std::enable_if< M == NotThreadSafe, u64>::type exchange(u64 newVal) { auto v = mS.mVal; mS.mVal = newVal;  return v; }
-            template<CuckooTypes M = Mode>
-            typename std::enable_if< M == NotThreadSafe, u64>::type load() const { return mS.mVal; }
+            // 原子地交换 Bin 对象的值（非线程安全的实现）
+            // 赋新值, 返回旧值
+            template <CuckooTypes M = Mode>
+            typename std::enable_if<M == NotThreadSafe, u64>::type exchange(u64 newVal)
+            {
+                auto v = mS.mVal;
+                mS.mVal = newVal;
+                return v;
+            }
+
+            // 在 NotThreadSafe 的情况下，直接返回 mS.mVal
+            // 因为在非线程安全的情况下不需要使用原子操作
+            template <CuckooTypes M = Mode>
+            typename std::enable_if<M == NotThreadSafe, u64>::type load() const
+            {
+                return mS.mVal;
+            }
         };
 
+        // 重插入的限制次数
+        u64 mReinsertLimit = 200;
+        // 桶的数量和对应的计算掩码
+        u64 mNumBins, mNumBinMask;
 
+        // std::vector<u8> mRandHashIdx;
+        // PRNG mPrng;
+
+        // cuckooHash 的设置参数
+        CuckooParam mParams;
+
+        // Mod计算实例，size() = 哈希函数数量
+        std::vector<Mod> mMods;
+        // 存储输入元素的 hash 值，若使用 CuckooIndex 提供的，则使用 AES 来计算哈希值
+        std::vector<block> mVals;
+        // N * hNum，存储所有元素的位置
+        Matrix<u32> mLocations;
+        // 存储 bins的 vector
+        std::vector<Bin> mBins;
+        // 存数 stash 的 vector
+        std::vector<Bin> mStash;
+
+        // The total number of (re)inserts that were required,
+        // 所需(重新)插入的总数
+        u64 mTotalTries;
+
+        // 遍历主哈希表 mBins，对每个桶进行检查
+        // 对于每个非空 Bin，打印出桶的索引号、关联的输入索引和哈希索引
+        // 遍历备用哈希表 mStash，对每个非空桶进行相同的操作
+        // 打印结束
         void print() const;
 
+        // 根据集合大小n、安全参数statSecParam、stash的size和哈希函数的数量h构造CuckooParam
+        static CuckooParam selectParams(const u64 &n, const u64 &statSecParam, const u64 &stashSize, const u64 &h);
 
-        void init(const u64& n, const u64& statSecParam, u64 stashSize, u64 h);
-        void init(const CuckooParam& params);
+        // 初始化函数，调用 selectParams 方法生成 CuckooParam 进而初始化
+        void init(const u64 &n, const u64 &statSecParam, u64 stashSize, u64 h);
 
-        static CuckooParam selectParams(const u64& n, const u64& statSecParam, const u64& stashSize, const u64& h);
+        // 初始化函数，根据 CuckooParam 初始化
+        void init(const CuckooParam &params);
 
-        // insert unhashed items into the table using the provided hashing seed. 
-        // set startIdx to be the first idx of the items being inserted. When 
+        // insert unhashed items into the table using the provided hashing seed.
+        // set startIdx to be the first idx of the items being inserted. When
         // find is called, it will return these indexes.
+        // 通过给定的哈希种子将未经哈希的项插入到索引中
+        // 可以设置 startIdx 作为要插入的项的第一个索引
+        // 当调用 find 函数时，它将返回这些索引
+        // 内置 AES 进行哈希
         void insert(span<block> items, block hashingSeed, u64 startIdx = 0);
 
-        // insert pre hashed items into the table. 
-        // set startIdx to be the first idx of the items being inserted. When 
+        // insert pre hashed items into the table.
+        // set startIdx to be the first idx of the items being inserted. When
         // find is called, it will return these indexes.
+        // 将预先哈希的项插入到索引中，调用 probeInsert 函数执行实际的插入操作
+        // 可以设置 startIdx 作为要插入的项的第一个索引
+        // 当调用 find 函数时，它将返回这些索引
         void insert(span<const block> items, u64 startIdx = 0);
 
         // insert single index with pre hashed values with error checking
-        void insert(const u64& IdxItem, const block& hashes);
+        // 使用预先哈希的值插入单个索引，并进行错误检查
+        void insert(const u64 &IdxItem, const block &hashes);
 
         // insert several items with pre-hashed values with error checking
-        //void insert(span<u64> itemIdxs, span<block> hashs);
+        // void insert(span<u64> itemIdxs, span<block> hashs);
 
         // insert several items with pre-hashed values
+        // 使用预先哈希的值插入多个项，实际的插入操作
         void probeInsert(span<u64> itemIdxs);
 
+        // 单独插入某个item, 输入为itemIdx hashIdx tryIdx
         void insertOne(u64 itemIdx, u64 hashIdx, u64 tryIdx);
 
+        // 该函数用于计算给定哈希值对应的哈希表中的行索引
+        // 调用 buildRow32 和 buildRow 函数来计算哈希值的行索引，并将结果写入到提供的矩阵视图
         void computeLocations(span<const block> hashes, oc::MatrixView<u32> rows);
 
+        // FindResult 用于存储查找结果
+        // mInputIdx：表示找到的输入项的索引
+        // mCuckooPosition：表示在Cuckoo哈希表中的位置
         struct FindResult
         {
             u64 mInputIdx;
@@ -273,123 +386,40 @@ namespace osuCrypto
         };
 
         // find a single item with pre-hashed values and error checking.
-        FindResult find(const block& hash);
+        // 通过预先哈希的值查找单个项，并进行错误检查
+        FindResult find(const block &hash);
 
         // find several items with pre hashed values, the indexes that are found are written to the idxs array.
+        // 通过预先哈希的值查找多个项，并将找到的项的索引写入到提供的 idxs 数组中
         void find(span<block> hashes, span<u64> idxs);
 
         // find several items with pre hashed values, the indexes that are found are written to the idxs array.
-        //void find(const u64& numItems, const  block* hashes, const u64* idxs);
+        // void find(const u64& numItems, const  block* hashes, const u64* idxs);
 
         // checks that the cuckoo index is correct
+        // 验证Cuckoo索引的正确性。它会对输入项进行哈希，并检查哈希值是否与存储在Cuckoo哈希表中的值匹配
+        // 如果验证失败，则会引发异常
         void validate(span<block> inputs, block hashingSeed);
 
         // Return the number of items in the stash.
+        // 计算溢出区 stash 的真实数量
         u64 stashUtilization() const;
 
+        // == 运算符重载
+        bool operator==(const CuckooIndex &cmp) const;
+        // != 运算符重载
+        bool operator!=(const CuckooIndex &cmp) const;
 
-        std::vector<Mod> mMods;
-        std::vector<block> mVals;
-        Matrix<u32> mLocations;
+        // 根据输入索引和哈希索引获取哈希表 mLocations 中的哈希值，用于后续的查找和插入操作
+        u64 getHash(const u64 &inputIdx, const u64 &hashIdx);
 
-        std::vector<Bin> mBins;
-        std::vector<Bin> mStash;
-
-        // The total number of (re)inserts that were required,
-        u64 mTotalTries;
-
-        // Compare two Index.
-        bool operator==(const CuckooIndex& cmp)const;
-        bool operator!=(const CuckooIndex& cmp)const;
-
-        CuckooParam mParams;
-
-        u64 getHash(const u64& inputIdx, const u64& hashIdx);
-
-        //template <typename T, unsigned int b>
-        //inline static T
-        //    rotl(T v)
-        //{
-        //    static_assert(std::is_integral<T>::value, "rotate of non-integral type");
-        //    static_assert(!std::is_signed<T>::value, "rotate of signed type");
-        //    constexpr unsigned int num_bits{ std::numeric_limits<T>::digits };
-        //    static_assert(0 == (num_bits & (num_bits - 1)), "rotate value bit length not power of two");
-        //    constexpr unsigned int count_mask{ num_bits - 1 };
-        //    constexpr unsigned int mb{ b & count_mask };
-        //    using promoted_type = typename std::common_type<int, T>::type;
-        //    using unsigned_promoted_type = typename std::make_unsigned<promoted_type>::type;
-        //    return ((unsigned_promoted_type{ v } << mb)
-        //        | (unsigned_promoted_type{ v } >> (-mb & count_mask)));
-        //}
-
-
-        //inline static block expand(const block& hash, const u8& numHash, const u64& num_bins, const u64& binMask)
-        //{
-
-        //    static_assert(CUCKOOINDEX_MAX_HASH_FUNCTION_COUNT < 5,
-        //        "here we assume that we dont overflow the 16 byte 'block hash'. "
-        //        "To assume that we can have at most 4 has function, i.e. we need  2*hashIdx + sizeof(u64) < sizeof(block)");
-
-        //    assert(numHash <= 3);
-        //    //static const u64 mask = (1ull << 40) - 1;
-        //    auto& bytes = hash.as<const u8>();
-        //    u64 h0 = *(u64*)bytes.data();
-        //    u64 h1 = *(u64*)(bytes.data() + 4);
-        //    u64 h2 = *(u64*)(bytes.data() + 8);
-
-        //    while ((binMask & h0) >= num_bins)
-        //        h0 = rotl<u64, 7>(h0);
-        //    while ((binMask & h1) >= num_bins)
-        //        h1 = rotl<u64, 7>(h1);
-        //    while ((binMask & h2) >= num_bins)
-        //        h2 = rotl<u64, 7>(h2);
-
-        //    h0 = (binMask & h0);
-        //    h1 = (binMask & h1);
-        //    h2 = (binMask & h2);
-
-        //    //h0 = h0 % num_bins;
-        //    //h1 = h1 % num_bins;
-        //    //h2 = h2 % num_bins;
-
-        //    if (h0 >= num_bins)
-        //        throw RTE_LOC;
-        //    if (h1 >= num_bins)
-        //        throw RTE_LOC;
-        //    if (h2 >= num_bins)
-        //        throw RTE_LOC;
-
-        //    block ret = ZeroBlock;
-        //    std::memcpy(&ret.as<u8>()[0], &h0, 5);
-        //    std::memcpy(&ret.as<u8>()[5], &h1, 5);
-        //    std::memcpy(&ret.as<u8>()[10], &h2, 5);
-        //    return ret;
-        //}
-
-        //inline static u64 getHash2(const block& hash, const u8& hashIdx, const u64& num_bins)
-        //{
-
-        //    static_assert(CUCKOOINDEX_MAX_HASH_FUNCTION_COUNT < 4,
-        //        "here we assume that we dont overflow the 16 byte 'block hash'. "
-        //        "To assume that we can have at most 4 has function, i.e. we need  2*hashIdx + sizeof(u64) < sizeof(block)");
-        //    //AES aes(block(0, hashIdx));
-        //    //auto h = aes.ecbEncBlock(hash);
-        //    //return (*(u64*)&h) % num_bins;
-        //    //auto rr = (*(u64*)&hash.as<u8>()[hashIdx * 5]) & 1099511627775ull;
-        //    //if (rr >= num_bins)
-        //    //    throw RTE_LOC;
-        //    //return rr;
-        //    return mod64(*(u64*)(((u8*)&hash) + (2 * hashIdx)), num_bins);
-        //}
-
-        //static u64 getHash(const block& hash, const u8& hashIdx, const u64& num_bins);
-
-
-        static u8 minCollidingHashIdx(u64 target, block& hashes, u8 numHashFunctions, u64 numBins) { return -1; }
+        static u8 minCollidingHashIdx(u64 target, block &hashes, u8 numHashFunctions, u64 numBins) { return -1; }
     };
 
-    template<CuckooTypes Mode = ThreadSafe>
-    inline std::ostream& operator<<(std::ostream& o, const CuckooIndex<Mode>&  c)
+    // 将 CuckooStash 输出到控制台
+    // 非类型模板参数的模板声明, 允许在编译时提供一个值作为模板参数
+    template <CuckooTypes Mode = ThreadSafe>
+    inline std::ostream &operator<<(std::ostream &o, const CuckooIndex<Mode> &c)
     {
         o << "cuckoo:\n";
         for (u64 i = 0; i < c.mBins.size(); ++i)
@@ -418,7 +448,7 @@ namespace osuCrypto
         for (u64 i = 0; i < c.mStash.size(); ++i)
         {
 
-            o <<"S"<< i << "[";
+            o << "S" << i << "[";
             if (c.mBins[i].isEmpty())
             {
                 o << "_";
